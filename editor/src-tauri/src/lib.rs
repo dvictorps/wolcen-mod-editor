@@ -1,5 +1,6 @@
 pub mod wolcen;
 
+use wolcen::export::{ExportRequest, ExportResult};
 use wolcen::passives::{NodeDetail, PassiveSection, SectionSummary};
 use wolcen::skills::{SkillDetail, SkillSummary};
 use wolcen::Config;
@@ -37,6 +38,11 @@ fn get_node_effects(section: String, node: String) -> Result<NodeDetail, String>
     to_str(wolcen::passives::get_node_effects(&cfg(), &section, &node))
 }
 
+#[tauri::command]
+fn export_mod(request: ExportRequest) -> Result<ExportResult, String> {
+    to_str(wolcen::export::export(&cfg(), request))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -46,7 +52,8 @@ pub fn run() {
             get_skill,
             list_sections,
             get_section,
-            get_node_effects
+            get_node_effects,
+            export_mod
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

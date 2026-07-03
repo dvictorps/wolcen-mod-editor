@@ -17,6 +17,8 @@ pub struct Config {
     pub localization_dir: PathBuf,
     /// Where decoded plain-XML is cached.
     pub cache_dir: PathBuf,
+    /// Where exported mods are written.
+    pub mods_dir: PathBuf,
 }
 
 fn env_or(key: &str, default: &str) -> PathBuf {
@@ -38,6 +40,7 @@ impl Config {
             extracted_umbra: base.join(r"extracted\Umbra\Umbra"),
             localization_dir: base.join(r"extracted\localization_en"),
             cache_dir: base.join(r"editor\.cache"),
+            mods_dir: base.join("mods"),
         }
     }
 }

@@ -3,8 +3,8 @@ import { api, SkillSummary, SkillDetail } from "../api";
 
 type EditMap = Record<string, number>;
 
-function fieldKey(uid: string, element: string, attr: string) {
-  return `${uid}|${element}|${attr}`;
+function fieldKey(file: string, uid: string, element: string, attr: string) {
+  return `${file}|${uid}|${element}|${attr}`;
 }
 
 type DisabledMap = Record<string, boolean>;
@@ -93,7 +93,7 @@ export default function SkillsTab({
                   {v.description && <div className="perk-desc">{v.description}</div>}
                   <div className="fields">
                     {v.fields.map((f) => {
-                      const key = fieldKey(v.uid, f.element, f.attr);
+                      const key = fieldKey(detail.file, v.uid, f.element, f.attr);
                       const off = !!disabled[key];
                       const val = key in edits ? edits[key] : f.value;
                       const changed = key in edits && edits[key] !== f.value;

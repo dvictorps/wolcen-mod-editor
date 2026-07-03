@@ -68,6 +68,32 @@ export interface NodeDetail {
   effects: NodeEffect[];
 }
 
+export interface SkillEditReq {
+  file: string;
+  uid: string;
+  element: string;
+  attr: string;
+  value: number;
+}
+export interface PassiveEditReq {
+  file: string;
+  node: string;
+  eim: string;
+  attr: string;
+  value: number;
+}
+export interface ExportRequest {
+  mod_name: string;
+  skill_edits: SkillEditReq[];
+  passive_edits: PassiveEditReq[];
+}
+export interface ExportResult {
+  pak: string;
+  folder: string;
+  files: number;
+  changes: number;
+}
+
 export const api = {
   listSkills: () => invoke<SkillSummary[]>("list_skills"),
   getSkill: (name: string) => invoke<SkillDetail>("get_skill", { name }),
@@ -75,4 +101,5 @@ export const api = {
   getSection: (section: string) => invoke<PassiveSection>("get_section", { section }),
   getNodeEffects: (section: string, node: string) =>
     invoke<NodeDetail>("get_node_effects", { section, node }),
+  exportMod: (request: ExportRequest) => invoke<ExportResult>("export_mod", { request }),
 };

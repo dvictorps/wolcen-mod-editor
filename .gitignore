@@ -3,6 +3,7 @@
 /editor/node_modules/
 /editor/dist/
 /editor/.cache/
+/mods/
 
 # --- Game-derived data: NEVER publish (copyright © Wolcen Studio) ---
 /extracted/

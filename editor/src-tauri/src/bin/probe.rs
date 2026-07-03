@@ -1,6 +1,7 @@
 //! Headless verification harness: parses real game data with no GUI so we can
 //! confirm the core works. Run with: `cargo run --bin wolcen_probe`.
 
+use editor_lib::wolcen::export::{self, ExportRequest, SkillEdit};
 use editor_lib::wolcen::{passives, skills, Config};
 
 fn main() -> anyhow::Result<()> {
@@ -47,6 +48,22 @@ fn main() -> anyhow::Result<()> {
             println!("     {} = {}", f.attr, f.value);
         }
     }
+
+    println!("\n== EXPORT TEST ==");
+    let req = ExportRequest {
+        mod_name: "ProbeTest".into(),
+        skill_edits: vec![SkillEdit {
+            file: "Skills/NewSkills/Player/Player_Laceration.xml".into(),
+            uid: "player_laceration_variant_11".into(),
+            element: "BaseDamageMultiplier".into(),
+            attr: "AdditionalMultiplierFactorPerAilmentStack".into(),
+            value: 0.1,
+        }],
+        passive_edits: vec![],
+    };
+    let res = export::export(&cfg, req)?;
+    println!("pak: {}", res.pak);
+    println!("files: {}  changes: {}", res.files, res.changes);
 
     Ok(())
 }
