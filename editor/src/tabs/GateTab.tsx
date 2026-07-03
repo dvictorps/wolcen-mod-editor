@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, PassiveSection, PassiveNode } from "../api";
 
-const VB = 1800; // viewBox size — large so nodes spread along long spokes
+const VB = 2100; // viewBox size — large so nodes spread along long spokes
 const CX = VB / 2;
 const CY = VB / 2;
-const INNER_R = 150;
-const OUTER_R = 890;
+const INNER_R = 320; // bigger hole => more arc length near the section start
+const OUTER_R = 1000;
 
 type Placed = { section: string; node: PassiveNode; x: number; y: number };
 
 function nodeRadius(rarity: number) {
-  return rarity >= 3 ? 11 : rarity === 2 ? 7 : 4.5;
+  return rarity >= 3 ? 8 : rarity === 2 ? 6 : 4;
 }
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -50,7 +50,9 @@ export default function GateTab() {
       const byName = new Map<string, { x: number; y: number }>();
       for (const node of sec.nodes) {
         const theta = base + (node.angle - 0.5) * span;
-        const r = INNER_R + node.pos * (OUTER_R - INNER_R);
+        // pow(pos, 0.8) pushes the inner (low-pos) nodes outward so the crowded
+        // start-of-section nodes get more room.
+        const r = INNER_R + Math.pow(node.pos, 0.8) * (OUTER_R - INNER_R);
         const x = CX + r * Math.cos(theta);
         const y = CY + r * Math.sin(theta);
         byName.set(node.name, { x, y });
