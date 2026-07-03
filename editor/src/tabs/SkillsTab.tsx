@@ -7,12 +7,18 @@ function fieldKey(uid: string, element: string, attr: string) {
   return `${uid}|${element}|${attr}`;
 }
 
+type DisabledMap = Record<string, boolean>;
+
 export default function SkillsTab({
   edits,
   setEdits,
+  disabled,
+  setDisabled,
 }: {
   edits: EditMap;
   setEdits: (fn: (prev: EditMap) => EditMap) => void;
+  disabled: DisabledMap;
+  setDisabled: (fn: (prev: DisabledMap) => DisabledMap) => void;
 }) {
   const [skills, setSkills] = useState<SkillSummary[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -88,10 +94,24 @@ export default function SkillsTab({
                   <div className="fields">
                     {v.fields.map((f) => {
                       const key = fieldKey(v.uid, f.element, f.attr);
+                      const off = !!disabled[key];
                       const val = key in edits ? edits[key] : f.value;
                       const changed = key in edits && edits[key] !== f.value;
                       return (
-                        <label className="field" key={key}>
+                        <div className={"field" + (off ? " off" : "")} key={key}>
+                          <input
+                            type="checkbox"
+                            className="mod-toggle"
+                            checked={!off}
+                            title={
+                              off
+                                ? "modificador desativado — marque para reativar"
+                                : "desmarque para desativar este modificador"
+                            }
+                            onChange={() =>
+                              setDisabled((prev) => ({ ...prev, [key]: !off }))
+                            }
+                          />
                           <span className="field-name" title={f.element}>
                             {f.attr}
                           </span>
@@ -99,7 +119,8 @@ export default function SkillsTab({
                             type="number"
                             step="any"
                             value={val}
-                            className={changed ? "changed" : ""}
+                            disabled={off}
+                            className={changed && !off ? "changed" : ""}
                             onChange={(e) => {
                               const n = parseFloat(e.target.value);
                               setEdits((prev) => ({
@@ -108,12 +129,14 @@ export default function SkillsTab({
                               }));
                             }}
                           />
-                          {changed && (
-                            <span className="orig" title="original value">
+                          {off ? (
+                            <span className="orig off-tag">removido</span>
+                          ) : changed ? (
+                            <span className="orig" title="valor original">
                               was {f.value}
                             </span>
-                          )}
-                        </label>
+                          ) : null}
+                        </div>
                       );
                     })}
                   </div>

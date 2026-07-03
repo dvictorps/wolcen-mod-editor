@@ -92,9 +92,22 @@ body {
 .field input.changed { border-color: var(--changed); color: var(--changed); }
 .orig { font-size: 11px; color: var(--muted); }
 
+/* per-modifier enable/disable toggle */
+.mod-toggle { accent-color: var(--accent); cursor: pointer; margin: 0; flex-shrink: 0; width: 15px; height: 15px; }
+.field.off .field-name { text-decoration: line-through; color: var(--muted); opacity: 0.75; }
+.field input[type="number"]:disabled { opacity: 0.4; cursor: not-allowed; }
+.off-tag { color: var(--danger); }
+
 /* Gate of Fates wheel */
-.wheel-wrap { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 12px; }
-.wheel { width: min(100%, 82vh); height: auto; }
+.wheel-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 8px 12px; }
+.wheel-toolbar { display: flex; align-items: center; gap: 12px; padding: 4px 2px 8px; }
+.wheel-toolbar button { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.wheel-toolbar button:hover { border-color: var(--accent); }
+.hover-name { color: var(--accent); font-size: 12px; }
+.node-note { margin-top: 14px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.node-note code { color: var(--accent-2); }
+.wheel { flex: 1; min-height: 0; width: 100%; height: auto; cursor: grab; }
+.wheel.grabbing { cursor: grabbing; }
 .hub { fill: #23262f; stroke: var(--accent); stroke-opacity: 0.4; }
 .edge { stroke: #3a3e4d; stroke-width: 1; }
 .node { fill: #4a4f63; stroke: #12131a; stroke-width: 1.5; cursor: pointer; transition: fill 0.1s; }

@@ -5,12 +5,15 @@ import "./App.css";
 
 type Tab = "skills" | "gate";
 type EditMap = Record<string, number>;
+type DisabledMap = Record<string, boolean>;
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("skills");
   const [edits, setEdits] = useState<EditMap>({});
+  const [disabled, setDisabled] = useState<DisabledMap>({});
 
-  const changedCount = Object.keys(edits).length;
+  const changedCount =
+    Object.keys(edits).length + Object.values(disabled).filter(Boolean).length;
 
   return (
     <div className="app">
@@ -31,7 +34,12 @@ export default function App() {
 
       <main className="content">
         {tab === "skills" ? (
-          <SkillsTab edits={edits} setEdits={setEdits} />
+          <SkillsTab
+            edits={edits}
+            setEdits={setEdits}
+            disabled={disabled}
+            setDisabled={setDisabled}
+          />
         ) : (
           <GateTab />
         )}
