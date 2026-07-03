@@ -110,7 +110,17 @@ export interface ExportResult {
   changes: number;
 }
 
+export interface AppStateInfo {
+  game_dir: string | null;
+  prepared: boolean;
+  detected: string | null;
+  tools_ok: boolean;
+}
+
 export const api = {
+  getState: () => invoke<AppStateInfo>("get_state"),
+  setGameDir: (dir: string) => invoke<void>("set_game_dir", { dir }),
+  prepareData: () => invoke<void>("prepare_data"),
   listSkills: () => invoke<SkillSummary[]>("list_skills"),
   getSkill: (name: string) => invoke<SkillDetail>("get_skill", { name }),
   listSections: () => invoke<SectionSummary[]>("list_sections"),

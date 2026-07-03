@@ -3,6 +3,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import SkillsTab from "./tabs/SkillsTab";
 import GateTab from "./tabs/GateTab";
 import PlayerTab from "./tabs/PlayerTab";
+import SetupScreen from "./SetupScreen";
 import { api } from "./api";
 import "./App.css";
 
@@ -19,6 +20,7 @@ export default function App() {
   const [modName, setModName] = useState("MyWolcenMod");
   const [exporting, setExporting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   const changedCount =
     Object.keys(edits).length +
@@ -64,6 +66,10 @@ export default function App() {
     } finally {
       setExporting(false);
     }
+  }
+
+  if (!ready) {
+    return <SetupScreen onReady={() => setReady(true)} />;
   }
 
   return (

@@ -60,10 +60,29 @@ fn main() -> anyhow::Result<()> {
             value: 0.1,
         }],
         passive_edits: vec![],
+        player_edits: vec![],
     };
     let res = export::export(&cfg, req)?;
     println!("pak: {}", res.pak);
     println!("files: {}  changes: {}", res.files, res.changes);
+
+    println!("\n== SELF-CONTAINED SETUP TEST (bundled exe -> decrypt real game) ==");
+    println!("detected: {:?}", editor_lib::wolcen::setup::detect_game());
+    let test_root = std::path::PathBuf::from(r"E:\Desenvolvimento\WolcenModding\editor\.setuptest");
+    let scfg = Config {
+        game_dir: std::path::PathBuf::from(r"D:\SteamLibrary\steamapps\common\Wolcen"),
+        tools_bin: std::path::PathBuf::from(
+            r"E:\Desenvolvimento\WolcenModding\editor\src-tauri\resources\tools",
+        ),
+        extracted_umbra: test_root.join("gamedata").join("Umbra"),
+        localization_dir: test_root.join("gamedata").join("localization"),
+        cache_dir: test_root.join("cache"),
+        mods_dir: test_root.join("mods"),
+        data_root: test_root.clone(),
+    };
+    editor_lib::wolcen::setup::prepare_data(&scfg)?;
+    println!("prepared: {}", scfg.is_prepared());
+    let _ = std::fs::remove_dir_all(&test_root);
 
     Ok(())
 }
