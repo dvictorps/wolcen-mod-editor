@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { open } from "@tauri-apps/plugin-dialog";
 import SkillsTab from "./tabs/SkillsTab";
 import GateTab from "./tabs/GateTab";
 import PlayerTab from "./tabs/PlayerTab";
@@ -19,8 +20,46 @@ export default function App() {
   const [playerEdits, setPlayerEdits] = useState<EditMap>({});
   const [modName, setModName] = useState("MyWolcenMod");
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+
+  async function doImport() {
+    const dir = await open({
+      directory: true,
+      title: "Selecione a pasta do mod (a que contém 'Umbra')",
+    });
+    if (!dir || typeof dir !== "string") return;
+    setImporting(true);
+    setStatus("Importando mod…");
+    try {
+      const r = await api.importMod(dir);
+      setEdits((prev) => {
+        const n = { ...prev };
+        for (const e of r.skill_edits) n[`${e.file}|${e.uid}|${e.element}|${e.attr}`] = e.value;
+        return n;
+      });
+      setPassiveEdits((prev) => {
+        const n = { ...prev };
+        for (const e of r.passive_edits) n[`${e.file}|${e.node}|${e.eim}|${e.attr}`] = e.value;
+        return n;
+      });
+      setPlayerEdits((prev) => {
+        const n = { ...prev };
+        for (const e of r.player_edits) n[`${e.file}|${e.element}|${e.attr}`] = e.value;
+        return n;
+      });
+      const total = r.skill_edits.length + r.passive_edits.length + r.player_edits.length;
+      setStatus(
+        `✓ Importado: ${total} edição(ões) de ${r.files} arquivo(s).` +
+          (r.skipped.length ? ` (${r.skipped.length} arquivo(s) ignorado(s))` : "")
+      );
+    } catch (e) {
+      setStatus(`✗ erro ao importar: ${e}`);
+    } finally {
+      setImporting(false);
+    }
+  }
 
   const changedCount =
     Object.keys(edits).length +
@@ -88,6 +127,9 @@ export default function App() {
           </button>
         </nav>
         <div className="export-bar">
+          <button className="import-btn" disabled={importing || exporting} onClick={doImport}>
+            {importing ? "Importando…" : "Importar mod"}
+          </button>
           <input
             className="mod-name"
             value={modName}

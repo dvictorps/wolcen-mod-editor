@@ -151,6 +151,17 @@ export default function GateTab({
     <div className="split">
       <section className="wheel-wrap">
         {error && <div className="error">{error}</div>}
+        {sections.length === 0 && !error && (
+          <div className="spinner-box">
+            <div className="spinner" />
+            <div>
+              Carregando a Gate of Fates…
+              <div className="small">na primeira vez o app descriptografa os dados (alguns segundos)</div>
+            </div>
+          </div>
+        )}
+        {sections.length > 0 && (
+          <>
         <div className="wheel-toolbar">
           <input
             className="node-search"
@@ -208,6 +219,8 @@ export default function GateTab({
             ))}
           </g>
         </svg>
+          </>
+        )}
       </section>
 
       <aside className="node-panel">

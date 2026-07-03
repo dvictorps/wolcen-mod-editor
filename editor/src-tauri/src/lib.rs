@@ -3,6 +3,7 @@ pub mod wolcen;
 use tauri::AppHandle;
 
 use wolcen::export::{ExportRequest, ExportResult};
+use wolcen::import::ImportResult;
 use wolcen::passives::{NodeDetail, PassiveSection, SectionSummary};
 use wolcen::player::PlayerStats;
 use wolcen::setup::AppState;
@@ -71,10 +72,16 @@ fn export_mod(app: AppHandle, request: ExportRequest) -> Result<ExportResult, St
     to_str(wolcen::export::export(&cfg(&app), request))
 }
 
+#[tauri::command]
+fn import_mod(app: AppHandle, dir: String) -> Result<ImportResult, String> {
+    to_str(wolcen::import::import_mod(&cfg(&app), &dir))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             get_state,
             set_game_dir,
@@ -85,7 +92,8 @@ pub fn run() {
             get_section,
             get_node_effects,
             get_player_stats,
-            export_mod
+            export_mod,
+            import_mod
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

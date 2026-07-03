@@ -109,6 +109,13 @@ export interface ExportResult {
   files: number;
   changes: number;
 }
+export interface ImportResult {
+  skill_edits: SkillEditReq[];
+  passive_edits: PassiveEditReq[];
+  player_edits: PlayerEditReq[];
+  files: number;
+  skipped: string[];
+}
 
 export interface AppStateInfo {
   game_dir: string | null;
@@ -129,4 +136,5 @@ export const api = {
     invoke<NodeDetail>("get_node_effects", { section, node }),
   getPlayerStats: () => invoke<PlayerStats>("get_player_stats"),
   exportMod: (request: ExportRequest) => invoke<ExportResult>("export_mod", { request }),
+  importMod: (dir: string) => invoke<ImportResult>("import_mod", { dir }),
 };

@@ -66,6 +66,16 @@ fn main() -> anyhow::Result<()> {
     println!("pak: {}", res.pak);
     println!("files: {}  changes: {}", res.files, res.changes);
 
+    println!("\n== IMPORT TEST (read the mod back into edits) ==");
+    let imp = editor_lib::wolcen::import::import_mod(
+        &cfg,
+        r"E:\Desenvolvimento\WolcenModding\mods\ProbeTest",
+    )?;
+    println!("files: {}  skill_edits: {}", imp.files, imp.skill_edits.len());
+    for e in &imp.skill_edits {
+        println!("  {} | {} | {} = {}", e.uid, e.element, e.attr, e.value);
+    }
+
     println!("\n== SELF-CONTAINED SETUP TEST (bundled exe -> decrypt real game) ==");
     println!("detected: {:?}", editor_lib::wolcen::setup::detect_game());
     let test_root = std::path::PathBuf::from(r"E:\Desenvolvimento\WolcenModding\editor\.setuptest");

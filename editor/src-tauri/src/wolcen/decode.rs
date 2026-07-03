@@ -1,11 +1,26 @@
 use std::fs;
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 use anyhow::{bail, Context, Result};
 
 use super::paths::Config;
+
+/// Windows: don't pop a console window when running the bundled console exes.
+fn hidden_command(program: &Path) -> Command {
+    let cmd = Command::new(program);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let mut cmd = cmd;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        return cmd;
+    }
+    #[allow(unreachable_code)]
+    cmd
+}
 
 /// True if the file begins with the CryXML binary magic.
 pub fn is_cryxml(path: &Path) -> Result<bool> {
@@ -17,36 +32,38 @@ pub fn is_cryxml(path: &Path) -> Result<bool> {
 
 /// Decode a file (relative to the extracted Umbra root) into plain XML text.
 ///
-/// If it is CryXML it is run through DataForge2; if already plain it is read
-/// as-is. Decoded output is cached under `cache_dir` so repeat reads are cheap.
+/// Results are cached under `cache_dir`; once a file is decoded it is read
+/// straight from the cache (no DataForge2 process spawned) — the game data is
+/// frozen so the cache never goes stale.
 pub fn read_umbra_xml(cfg: &Config, rel: &str) -> Result<String> {
     let rel_win = rel.replace('/', "\\");
+    let cached = cfg.cache_dir.join(&rel_win);
+    if cached.exists() {
+        return Ok(fs::read_to_string(&cached)?);
+    }
+
     let src = cfg.extracted_umbra.join(&rel_win);
     if !src.exists() {
         bail!("source not found: {}", src.display());
     }
-
-    // Non-CryXML files (rare here) are already plain text.
-    if !is_cryxml(&src)? {
-        return Ok(fs::read_to_string(&src)?);
-    }
-
-    let cached = cfg.cache_dir.join(&rel_win); // e.g. .cache\Skills\...\Foo.xml
     if let Some(p) = cached.parent() {
         fs::create_dir_all(p)?;
     }
 
-    // DataForge2 turns <name>.xml (CryXML) into <name>.raw (plain). Feed it a
-    // copy that ends in .xml so the .raw naming is predictable.
+    // Already-plain files: just copy into the cache.
+    if !is_cryxml(&src)? {
+        fs::copy(&src, &cached)?;
+        return Ok(fs::read_to_string(&cached)?);
+    }
+
+    // CryXML: DataForge2 turns <name>.xml into <name>.raw (plain XML).
     let feed = cached.with_extension("cryxml.xml");
     fs::copy(&src, &feed)?;
     let df = cfg.tools_bin.join("DataForge2.exe");
-    let status = Command::new(&df)
+    let status = hidden_command(&df)
         .arg(&feed)
         .status()
         .with_context(|| format!("running {}", df.display()))?;
-    // DataForge2 exits 0 on success; some builds return non-zero even so — rely
-    // on the presence of the .raw output rather than the exit code.
     let raw = feed.with_extension("raw");
     if !raw.exists() {
         bail!(
@@ -56,10 +73,8 @@ pub fn read_umbra_xml(cfg: &Config, rel: &str) -> Result<String> {
         );
     }
     let text = fs::read_to_string(&raw)?;
-    // Tidy the intermediate; keep the .raw as the cache artifact.
+    let _ = fs::rename(&raw, &cached).or_else(|_| fs::copy(&raw, &cached).map(|_| ()));
     let _ = fs::remove_file(&feed);
-    let final_path: PathBuf = cached; // keep decoded under the clean name too
-    let _ = fs::copy(&raw, &final_path);
     Ok(text)
 }
 

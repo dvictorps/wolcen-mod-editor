@@ -88,10 +88,14 @@ fn pakdecrypt(cfg: &Config, src: &Path, dst: &Path) -> Result<()> {
     if !src.exists() {
         bail!("pak not found: {}", src.display());
     }
-    Command::new(&exe)
-        .arg(src)
-        .arg(dst)
-        .status()
+    let mut cmd = Command::new(&exe);
+    cmd.arg(src).arg(dst);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    cmd.status()
         .with_context(|| format!("running {}", exe.display()))?;
     if !dst.exists() {
         bail!(
