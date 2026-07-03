@@ -33,9 +33,19 @@ fn main() -> anyhow::Result<()> {
     println!("Melee ui_name={} nodes={}", melee.ui_name, melee.nodes.len());
     if let Some(n) = melee.nodes.first() {
         println!(
-            "  first node: {} rarity={} angle={} pos={} unlock={:?}",
-            n.name, n.rarity, n.angle, n.pos, n.unlock
+            "  first node: {} '{}' rarity={} unlock={:?}",
+            n.name, n.display_name, n.rarity, n.unlock
         );
+    }
+
+    println!("\n== NODE EFFECTS (Melee / MELEE_1) ==");
+    let nd = passives::get_node_effects(&cfg, "Melee", "MELEE_1")?;
+    println!("node {} = '{}'  file={}", nd.node, nd.display_name, nd.file);
+    for eff in &nd.effects {
+        println!("  EIM {} [{}]", eff.eim, eff.label);
+        for f in &eff.fields {
+            println!("     {} = {}", f.attr, f.value);
+        }
     }
 
     Ok(())

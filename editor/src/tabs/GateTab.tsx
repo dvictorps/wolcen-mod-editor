@@ -1,26 +1,42 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, PassiveSection, PassiveNode } from "../api";
 
-const VB = 2100; // viewBox size — large so nodes spread along long spokes
+const VB = 2100;
 const CX = VB / 2;
 const CY = VB / 2;
-const INNER_R = 320; // bigger hole => more arc length near the section start
+const INNER_R = 320;
 const OUTER_R = 1000;
 
-type Placed = { section: string; node: PassiveNode; x: number; y: number };
+type Placed = {
+  section: string;
+  pstFile: string;
+  node: PassiveNode;
+  x: number;
+  y: number;
+  search: string;
+};
+type EditMap = Record<string, number>;
 
 function nodeRadius(rarity: number) {
   return rarity >= 3 ? 8 : rarity === 2 ? 6 : 4;
 }
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const fieldKey = (file: string, node: string, eim: string, attr: string) =>
+  `${file}|${node}|${eim}|${attr}`;
 
-export default function GateTab() {
+export default function GateTab({
+  edits,
+  setEdits,
+}: {
+  edits: EditMap;
+  setEdits: (fn: (prev: EditMap) => EditMap) => void;
+}) {
   const [sections, setSections] = useState<PassiveSection[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Placed | null>(null);
   const [hovered, setHovered] = useState<Placed | null>(null);
+  const [query, setQuery] = useState("");
 
-  // zoom / pan
   const [scale, setScale] = useState(1);
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
@@ -50,13 +66,16 @@ export default function GateTab() {
       const byName = new Map<string, { x: number; y: number }>();
       for (const node of sec.nodes) {
         const theta = base + (node.angle - 0.5) * span;
-        // pow(pos, 0.8) pushes the inner (low-pos) nodes outward so the crowded
-        // start-of-section nodes get more room.
         const r = INNER_R + Math.pow(node.pos, 0.8) * (OUTER_R - INNER_R);
         const x = CX + r * Math.cos(theta);
         const y = CY + r * Math.sin(theta);
         byName.set(node.name, { x, y });
-        placed.push({ section: sec.name, node, x, y });
+        // searchable text: node names + what each effect does
+        const eff = node.effects
+          .map((e) => e.label + " " + e.fields.map((f) => f.attr).join(" "))
+          .join(" ");
+        const search = (node.display_name + " " + node.name + " " + eff).toLowerCase();
+        placed.push({ section: sec.name, pstFile: sec.pst_file, node, x, y, search });
       }
       for (const node of sec.nodes) {
         const from = byName.get(node.name);
@@ -75,23 +94,34 @@ export default function GateTab() {
     return { placed, edges, labels };
   }, [sections]);
 
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return null as Set<Placed> | null;
+    const set = new Set<Placed>();
+    for (const p of placed) if (p.search.includes(q)) set.add(p);
+    return set;
+  }, [query, placed]);
+
+  useEffect(() => {
+    if (!matches || matches.size === 0) return;
+    const first = matches.values().next().value as Placed;
+    const s = 2.6;
+    setScale(s);
+    setTx(VB / 2 - s * first.x);
+    setTy(VB / 2 - s * first.y);
+  }, [matches]);
+
   function toSvg(clientX: number, clientY: number) {
     const rect = svgRef.current!.getBoundingClientRect();
-    return {
-      x: ((clientX - rect.left) / rect.width) * VB,
-      y: ((clientY - rect.top) / rect.height) * VB,
-    };
+    return { x: ((clientX - rect.left) / rect.width) * VB, y: ((clientY - rect.top) / rect.height) * VB };
   }
-
   function onWheel(e: React.WheelEvent) {
     e.preventDefault();
     const { x: mx, y: my } = toSvg(e.clientX, e.clientY);
     const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
     const ns = clamp(scale * factor, 0.6, 10);
-    const wx = (mx - tx) / scale;
-    const wy = (my - ty) / scale;
-    setTx(mx - wx * ns);
-    setTy(my - wy * ns);
+    setTx(mx - ((mx - tx) / scale) * ns);
+    setTy(my - ((my - ty) / scale) * ns);
     setScale(ns);
   }
   function onDown(e: React.MouseEvent) {
@@ -121,11 +151,17 @@ export default function GateTab() {
     <div className="split">
       <section className="wheel-wrap">
         {error && <div className="error">{error}</div>}
-        {sections.length === 0 && !error && <div className="muted">loading tree…</div>}
         <div className="wheel-toolbar">
-          <span className="muted small">scroll = zoom · arraste = mover</span>
+          <input
+            className="node-search"
+            placeholder="Buscar por nome ou efeito… (ex: armor, attack speed)"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {matches && <span className="muted small">{matches.size} nó(s)</span>}
           <button onClick={resetView}>Reset view</button>
-          {hovered && <span className="hover-name">{hovered.section} · {hovered.node.name}</span>}
+          <span className="muted small">scroll = zoom · arraste = mover</span>
+          {hovered && <span className="hover-name">{hovered.node.display_name}</span>}
         </div>
         <svg
           ref={svgRef}
@@ -138,19 +174,26 @@ export default function GateTab() {
           onMouseLeave={onUp}
         >
           <g transform={`translate(${tx},${ty}) scale(${scale})`}>
-            <circle cx={CX} cy={CY} r={INNER_R - 10} className="hub" />
+            <circle cx={CX} cy={CY} r={INNER_R - 12} className="hub" />
             {edges.map((e, i) => (
               <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} className="edge" />
             ))}
             {placed.map((p, i) => {
               const isSel = selected?.node.name === p.node.name && selected?.section === p.section;
+              const isMatch = matches?.has(p) ?? false;
+              const dim = matches && !isMatch;
               return (
                 <circle
                   key={i}
                   cx={p.x}
                   cy={p.y}
-                  r={nodeRadius(p.node.rarity) + (isSel ? 3 : 0)}
-                  className={"node r" + p.node.rarity + (isSel ? " sel" : "")}
+                  r={nodeRadius(p.node.rarity) + (isSel || isMatch ? 3 : 0)}
+                  className={
+                    "node r" + p.node.rarity +
+                    (isSel ? " sel" : "") +
+                    (isMatch ? " match" : "") +
+                    (dim ? " dim" : "")
+                  }
                   onMouseEnter={() => setHovered(p)}
                   onClick={() => {
                     if (!drag.current?.moved) setSelected(p);
@@ -159,13 +202,7 @@ export default function GateTab() {
               );
             })}
             {labels.map((l, i) => (
-              <text
-                key={i}
-                x={l.x}
-                y={l.y}
-                className="wheel-label"
-                transform={`rotate(${l.angle} ${l.x} ${l.y})`}
-              >
+              <text key={i} x={l.x} y={l.y} className="wheel-label" transform={`rotate(${l.angle} ${l.x} ${l.y})`}>
                 {l.text}
               </text>
             ))}
@@ -175,18 +212,41 @@ export default function GateTab() {
 
       <aside className="node-panel">
         <div className="rail-title">Node</div>
-        {!selected && <div className="muted small">Clique num nó da roda.</div>}
+        {!selected && <div className="muted small">Clique num nó da roda (ou busque acima).</div>}
         {selected && (
           <div>
-            <div className="node-title">{selected.node.name}</div>
+            <div className="node-title">{selected.node.display_name}</div>
+            <div className="kv"><span>id</span><b>{selected.node.name}</b></div>
             <div className="kv"><span>section</span><b>{selected.section}</b></div>
-            <div className="kv"><span>rarity</span><b>{selected.node.rarity}</b></div>
-            <div className="kv"><span>connections</span><b>{selected.node.unlock.length}</b></div>
-            <div className="node-note">
-              Editar o efeito deste nó é o próximo passo — falta mapear nó→stat
-              (o <code>PassiveEffects.xml</code> usa ids próprios). A roda já vem
-              100% dos dados reais do jogo.
-            </div>
+            {selected.node.effects.length === 0 && (
+              <div className="muted small" style={{ marginTop: 10 }}>Sem efeitos numéricos editáveis.</div>
+            )}
+            {selected.node.effects.map((eff, ei) => (
+              <div className="effect" key={ei}>
+                <div className="effect-label">{eff.label}</div>
+                {eff.fields.map((f) => {
+                  const key = fieldKey(selected.pstFile, selected.node.name, eff.eim, f.attr);
+                  const val = key in edits ? edits[key] : f.value;
+                  const changed = key in edits && edits[key] !== f.value;
+                  return (
+                    <label className="field" key={f.attr}>
+                      <span className="field-name" title={eff.eim}>{f.attr}</span>
+                      <input
+                        type="number"
+                        step="any"
+                        value={val}
+                        className={changed ? "changed" : ""}
+                        onChange={(e) => {
+                          const nv = parseFloat(e.target.value);
+                          setEdits((prev) => ({ ...prev, [key]: Number.isNaN(nv) ? f.value : nv }));
+                        }}
+                      />
+                      {changed && <span className="orig">was {f.value}</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         )}
       </aside>

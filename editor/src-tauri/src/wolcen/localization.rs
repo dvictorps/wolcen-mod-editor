@@ -89,3 +89,12 @@ pub fn load_passive_skills(cfg: &Config) -> Result<Strings> {
     }
     Ok(Strings { map })
 }
+
+/// Load the EIM (magic-effect) descriptions used by passive nodes.
+pub fn load_eim(cfg: &Config) -> Result<Strings> {
+    let mut map = HashMap::new();
+    if let Ok(xml) = read_localization(cfg, "text_ui_EIM.xml") {
+        parse_sheet(&xml, &mut map)?;
+    }
+    Ok(Strings { map })
+}

@@ -1,6 +1,6 @@
 pub mod wolcen;
 
-use wolcen::passives::{PassiveSection, SectionSummary};
+use wolcen::passives::{NodeDetail, PassiveSection, SectionSummary};
 use wolcen::skills::{SkillDetail, SkillSummary};
 use wolcen::Config;
 
@@ -32,6 +32,11 @@ fn get_section(section: String) -> Result<PassiveSection, String> {
     to_str(wolcen::passives::get_section(&cfg(), &section))
 }
 
+#[tauri::command]
+fn get_node_effects(section: String, node: String) -> Result<NodeDetail, String> {
+    to_str(wolcen::passives::get_node_effects(&cfg(), &section, &node))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -40,7 +45,8 @@ pub fn run() {
             list_skills,
             get_skill,
             list_sections,
-            get_section
+            get_section,
+            get_node_effects
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -33,18 +33,39 @@ export interface SectionSummary {
   file: string;
 }
 
+export interface NumField {
+  attr: string;
+  value: number;
+}
+
+export interface NodeEffect {
+  eim: string;
+  label: string;
+  fields: NumField[];
+}
+
 export interface PassiveNode {
   name: string;
+  display_name: string;
   rarity: number;
   angle: number;
   pos: number;
   unlock: string[];
+  effects: NodeEffect[];
 }
 
 export interface PassiveSection {
   name: string;
   ui_name: string;
+  pst_file: string;
   nodes: PassiveNode[];
+}
+
+export interface NodeDetail {
+  node: string;
+  display_name: string;
+  file: string;
+  effects: NodeEffect[];
 }
 
 export const api = {
@@ -52,4 +73,6 @@ export const api = {
   getSkill: (name: string) => invoke<SkillDetail>("get_skill", { name }),
   listSections: () => invoke<SectionSummary[]>("list_sections"),
   getSection: (section: string) => invoke<PassiveSection>("get_section", { section }),
+  getNodeEffects: (section: string, node: string) =>
+    invoke<NodeDetail>("get_node_effects", { section, node }),
 };

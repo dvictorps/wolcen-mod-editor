@@ -11,9 +11,12 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("skills");
   const [edits, setEdits] = useState<EditMap>({});
   const [disabled, setDisabled] = useState<DisabledMap>({});
+  const [passiveEdits, setPassiveEdits] = useState<EditMap>({});
 
   const changedCount =
-    Object.keys(edits).length + Object.values(disabled).filter(Boolean).length;
+    Object.keys(edits).length +
+    Object.values(disabled).filter(Boolean).length +
+    Object.keys(passiveEdits).length;
 
   return (
     <div className="app">
@@ -41,7 +44,7 @@ export default function App() {
             setDisabled={setDisabled}
           />
         ) : (
-          <GateTab />
+          <GateTab edits={passiveEdits} setEdits={setPassiveEdits} />
         )}
       </main>
     </div>
