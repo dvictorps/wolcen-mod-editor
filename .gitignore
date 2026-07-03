@@ -1,0 +1,17 @@
+# --- Build outputs ---
+/editor/src-tauri/target/
+/editor/node_modules/
+/editor/dist/
+/editor/.cache/
+
+# --- Game-derived data: NEVER publish (copyright © Wolcen Studio) ---
+/extracted/
+/_test/
+
+# --- Third-party binaries & sample mods (not ours to redistribute) ---
+/tools/
+
+# --- misc ---
+*.log
+.DS_Store
+Thumbs.db
