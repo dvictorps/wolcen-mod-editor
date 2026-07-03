@@ -31,10 +31,20 @@ pub struct PassiveEdit {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct PlayerEdit {
+    pub file: String,
+    pub element: String,
+    pub attr: String,
+    pub value: f64,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct ExportRequest {
     pub mod_name: String,
     pub skill_edits: Vec<SkillEdit>,
     pub passive_edits: Vec<PassiveEdit>,
+    #[serde(default)]
+    pub player_edits: Vec<PlayerEdit>,
 }
 
 #[derive(Serialize, Debug)]
@@ -51,6 +61,8 @@ enum Rule {
     Skill { uid: String, element: String, attr: String, value: f64 },
     /// Set `attr` on `<Semantics>` inside `<Spell Name=node><EIM Name=eim>`.
     Passive { node: String, eim: String, attr: String, value: f64 },
+    /// Set `attr` on any element named `element` (unique-by-name, e.g. player stats).
+    Plain { element: String, attr: String, value: f64 },
 }
 
 #[derive(Default)]
@@ -89,6 +101,11 @@ fn targets(lname: &[u8], ctx: &Ctx, rules: &[Rule]) -> Vec<(String, f64)> {
                     && ctx.spell.as_deref() == Some(node)
                     && ctx.eim.as_deref() == Some(eim)
                 {
+                    out.push((attr.clone(), *value));
+                }
+            }
+            Rule::Plain { element, attr, value } => {
+                if lname == element.as_bytes() {
                     out.push((attr.clone(), *value));
                 }
             }
@@ -207,6 +224,13 @@ pub fn export(cfg: &Config, req: ExportRequest) -> Result<ExportResult> {
         by_file.entry(e.file).or_default().push(Rule::Passive {
             node: e.node,
             eim: e.eim,
+            attr: e.attr,
+            value: e.value,
+        });
+    }
+    for e in req.player_edits {
+        by_file.entry(e.file).or_default().push(Rule::Plain {
+            element: e.element,
             attr: e.attr,
             value: e.value,
         });

@@ -2,10 +2,11 @@ import { useState } from "react";
 import { openPath } from "@tauri-apps/plugin-opener";
 import SkillsTab from "./tabs/SkillsTab";
 import GateTab from "./tabs/GateTab";
+import PlayerTab from "./tabs/PlayerTab";
 import { api } from "./api";
 import "./App.css";
 
-type Tab = "skills" | "gate";
+type Tab = "skills" | "gate" | "player";
 type EditMap = Record<string, number>;
 type DisabledMap = Record<string, boolean>;
 
@@ -14,6 +15,7 @@ export default function App() {
   const [edits, setEdits] = useState<EditMap>({});
   const [disabled, setDisabled] = useState<DisabledMap>({});
   const [passiveEdits, setPassiveEdits] = useState<EditMap>({});
+  const [playerEdits, setPlayerEdits] = useState<EditMap>({});
   const [modName, setModName] = useState("MyWolcenMod");
   const [exporting, setExporting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -21,7 +23,8 @@ export default function App() {
   const changedCount =
     Object.keys(edits).length +
     Object.values(disabled).filter(Boolean).length +
-    Object.keys(passiveEdits).length;
+    Object.keys(passiveEdits).length +
+    Object.keys(playerEdits).length;
 
   async function doExport() {
     setExporting(true);
@@ -39,11 +42,16 @@ export default function App() {
         const [file, node, eim, attr] = k.split("|");
         return { file, node, eim, attr, value };
       });
+      const player_edits = Object.entries(playerEdits).map(([k, value]) => {
+        const [file, element, attr] = k.split("|");
+        return { file, element, attr, value };
+      });
 
       const res = await api.exportMod({
         mod_name: modName || "MyWolcenMod",
         skill_edits,
         passive_edits,
+        player_edits,
       });
       setStatus(`✓ ${res.changes} edição(ões) em ${res.files} arquivo(s) → ${res.folder}`);
       try {
@@ -69,6 +77,9 @@ export default function App() {
           <button className={tab === "gate" ? "active" : ""} onClick={() => setTab("gate")}>
             Gate of Fates
           </button>
+          <button className={tab === "player" ? "active" : ""} onClick={() => setTab("player")}>
+            Player
+          </button>
         </nav>
         <div className="export-bar">
           <input
@@ -87,16 +98,16 @@ export default function App() {
       {status && <div className="statusbar">{status}</div>}
 
       <main className="content">
-        {tab === "skills" ? (
+        {tab === "skills" && (
           <SkillsTab
             edits={edits}
             setEdits={setEdits}
             disabled={disabled}
             setDisabled={setDisabled}
           />
-        ) : (
-          <GateTab edits={passiveEdits} setEdits={setPassiveEdits} />
         )}
+        {tab === "gate" && <GateTab edits={passiveEdits} setEdits={setPassiveEdits} />}
+        {tab === "player" && <PlayerTab edits={playerEdits} setEdits={setPlayerEdits} />}
       </main>
     </div>
   );

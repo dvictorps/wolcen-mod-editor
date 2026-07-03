@@ -107,6 +107,7 @@ body {
 .field.off .field-name { text-decoration: line-through; color: var(--muted); opacity: 0.75; }
 .field input[type="number"]:disabled { opacity: 0.4; cursor: not-allowed; }
 .off-tag { color: var(--danger); }
+.hintmark { color: var(--accent-2); font-size: 11px; cursor: help; }
 
 /* Gate of Fates wheel */
 .wheel-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 8px 12px; }

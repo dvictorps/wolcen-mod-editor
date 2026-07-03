@@ -2,6 +2,7 @@ pub mod wolcen;
 
 use wolcen::export::{ExportRequest, ExportResult};
 use wolcen::passives::{NodeDetail, PassiveSection, SectionSummary};
+use wolcen::player::PlayerStats;
 use wolcen::skills::{SkillDetail, SkillSummary};
 use wolcen::Config;
 
@@ -39,6 +40,11 @@ fn get_node_effects(section: String, node: String) -> Result<NodeDetail, String>
 }
 
 #[tauri::command]
+fn get_player_stats() -> Result<PlayerStats, String> {
+    to_str(wolcen::player::get_player_stats(&cfg()))
+}
+
+#[tauri::command]
 fn export_mod(request: ExportRequest) -> Result<ExportResult, String> {
     to_str(wolcen::export::export(&cfg(), request))
 }
@@ -53,6 +59,7 @@ pub fn run() {
             list_sections,
             get_section,
             get_node_effects,
+            get_player_stats,
             export_mod
         ])
         .run(tauri::generate_context!())

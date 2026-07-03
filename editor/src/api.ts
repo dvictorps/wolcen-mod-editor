@@ -68,9 +68,24 @@ export interface NodeDetail {
   effects: NodeEffect[];
 }
 
+export interface StatGroup {
+  element: string;
+  fields: NumField[];
+}
+export interface PlayerStats {
+  file: string;
+  groups: StatGroup[];
+}
+
 export interface SkillEditReq {
   file: string;
   uid: string;
+  element: string;
+  attr: string;
+  value: number;
+}
+export interface PlayerEditReq {
+  file: string;
   element: string;
   attr: string;
   value: number;
@@ -86,6 +101,7 @@ export interface ExportRequest {
   mod_name: string;
   skill_edits: SkillEditReq[];
   passive_edits: PassiveEditReq[];
+  player_edits: PlayerEditReq[];
 }
 export interface ExportResult {
   pak: string;
@@ -101,5 +117,6 @@ export const api = {
   getSection: (section: string) => invoke<PassiveSection>("get_section", { section }),
   getNodeEffects: (section: string, node: string) =>
     invoke<NodeDetail>("get_node_effects", { section, node }),
+  getPlayerStats: () => invoke<PlayerStats>("get_player_stats"),
   exportMod: (request: ExportRequest) => invoke<ExportResult>("export_mod", { request }),
 };
